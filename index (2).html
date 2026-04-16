@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>PARANPUR X | GUILD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+            }
+        }
+    </script>
+    <style>
+        :root { --bg-color: #ffffff; --text-color: #1f2937; }
+        body.dark-mode { --bg-color: #0f172a; --text-color: #e2e8f0; }
+        body { background-color: var(--bg-color); color: var(--text-color); transition: all 0.2s ease; font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+        .ticker-container { white-space: nowrap; overflow: hidden; background: #dc2626; }
+        .ticker-text { display: inline-block; animation: tickerScroll 28s linear infinite; padding-left: 100%; }
+        @keyframes tickerScroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        .sticky-header { position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(8px); background: rgba(255,255,255,0.96); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        body.dark-mode .sticky-header { background: rgba(15, 23, 42, 0.96); }
+        #mobileMenu { max-height: 0; overflow: hidden; transition: max-height 0.35s ease-out; }
+        #mobileMenu.active { max-height: 320px; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        #fullNewsView { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; overflow-y: auto; background: var(--bg-color); transition: 0.2s; display: none; }
+        .profile-card { display: flex; flex-direction: column; align-items: center; margin: 0 0.75rem; min-width: 65px; }
+        .profile-img { width: 2.8rem; height: 2.8rem; border-radius: 9999px; border: 2px solid #ef4444; object-fit: cover; background: white; }
+        .animate-marquee { display: flex; animation: marqueeAnim 32s linear infinite; }
+        @keyframes marqueeAnim { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+        .slider-animation { display: flex; animation: gentleSlide 14s ease-in-out infinite; }
+        @keyframes gentleSlide { 0%, 20% { transform: translateX(0); } 45%, 70% { transform: translateX(-50%); } 100% { transform: translateX(-50%); } }
+        .login-btn { background: #dc2626; padding: 0.4rem 1.2rem; border-radius: 999px; color: white; font-weight: 700; transition: 0.2s; font-size: 0.85rem; white-space: nowrap; }
+        .login-btn:hover { background: #b91c1c; transform: scale(0.97); }
+        img { user-select: none; }
+        #modalImg { transition: transform 0.1s linear; cursor: zoom-in; }
+        .loading-spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #dc2626; border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @media (max-width: 1023px) { .desktop-nav { display: none; } }
+        @media (min-width: 1024px) { .desktop-nav { display: flex; } }
+        .blink-red { animation: blink 1s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        #joinModal { display: flex; align-items: center; justify-content: center; }
+        #joinModal.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <!-- Full News View Popup -->
+    <div id="fullNewsView">
+        <div class="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b dark:border-gray-800 p-3 flex justify-between items-center backdrop-blur-md bg-opacity-95">
+            <button onclick="closeFullNews()" class="flex items-center gap-2 text-red-600 font-bold text-base md:text-lg"><i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Back</span></button>
+            <h1 class="text-red-700 font-black text-sm md:text-lg tracking-tight">PARANPUR X - Guild Tournament</h1>
+            <button onclick="copyArticleLink()" class="bg-gray-100 dark:bg-gray-800 p-2 rounded-full text-sm"><i class="fas fa-share-alt"></i></button>
+        </div>
+        <div class="container mx-auto px-4 py-6 max-w-4xl" id="newsContentWrap"></div>
+        <footer class="bg-gray-100 dark:bg-gray-900 mt-12 border-t dark:border-gray-800 transition-colors" id="popupFooter"></footer>
+    </div>
+
+    <!-- MAIN WEBSITE -->
+    <div id="mainWebsite">
+        <div class="bg-red-600 text-white py-1.5 ticker-container">
+            <div id="tickerText" class="ticker-text text-xs md:text-sm font-mono font-bold tracking-wide">🔴 BREAKING: সর্বশেষ খবর আসছে...</div>
+        </div>
+
+        <header class="sticky-header bg-white/90 dark:bg-gray-900/90 border-b dark:border-gray-800">
+            <div class="container mx-auto px-3 md:px-5 py-2 flex justify-between items-center gap-2">
+                <div class="cursor-pointer flex-shrink-0" onclick="resetToHome()">
+                    <h1 class="text-xl sm:text-2xl md:text-3xl font-black text-red-600 uppercase tracking-tighter leading-tight">PARANPUR-X<span class="text-gray-800 dark:text-white"> Guild</span></h1>
+                </div>
+                
+                <nav class="desktop-nav items-center space-x-5 lg:space-x-7 font-semibold text-sm lg:text-base">
+                    <a href="#" onclick="filterCategory('all')" class="hover:text-red-600 transition whitespace-nowrap">Home</a>
+                    <a href="#" onclick="filterCategory('National')" class="hover:text-red-600 transition whitespace-nowrap">National</a>
+                    <a href="#" onclick="filterCategory('International')" class="hover:text-red-600 transition whitespace-nowrap">International</a>
+                    <a href="#" onclick="filterCategory('Tech')" class="hover:text-red-600 transition whitespace-nowrap">Tech</a>
+                    <a href="#" onclick="filterCategory('Sports')" class="hover:text-red-600 transition whitespace-nowrap">Sports</a>
+                </nav>
+
+                <div class="flex items-center gap-2 md:gap-3 flex-shrink-0">
+                    <input type="text" id="searchInput" oninput="handleSearch(false)" placeholder="Search..." class="hidden md:block w-44 lg:w-56 border rounded-full px-3 py-1.5 text-sm dark:bg-gray-800 focus:ring-2 focus:ring-red-500 outline-none">
+                    <button id="themeToggle" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-sm"><i class="fas fa-moon"></i></button>
+                    <button onclick="handleLoginRedirect()" class="login-btn shadow-md"><i class="fas fa-user-circle mr-1"></i> <span class="hidden xs:inline">Login</span></button>
+                    <button id="menuBtn" class="lg:hidden p-2 rounded-full hover:bg-gray-100"><i class="fas fa-bars text-xl"></i></button>
+                </div>
+            </div>
+            <div id="mobileMenu" class="lg:hidden px-5 pb-3 bg-inherit">
+                <input type="text" id="mobileSearch" oninput="handleSearch(true)" placeholder="🔍 Search news, topics..." class="w-full border rounded-xl px-4 py-2.5 mb-3 dark:bg-gray-800 text-sm">
+                <div class="flex flex-col space-y-3 font-medium pb-2">
+                    <a href="#" onclick="filterCategory('all')" class="py-1">🏠 Home</a>
+                    <a href="#" onclick="filterCategory('National')" class="py-1">🇧🇩 National</a>
+                    <a href="#" onclick="filterCategory('International')" class="py-1">🌍 International</a>
+                    <a href="#" onclick="filterCategory('Tech')" class="py-1">💻 Tech</a>
+                    <a href="#" onclick="filterCategory('Sports')" class="py-1">⚽ Sports</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Loading Indicator -->
+        <div id="loadingIndicator" class="fixed inset-0 bg-white dark:bg-gray-900 z-50 flex items-center justify-center flex-col">
+            <div class="loading-spinner"></div>
+            <p class="mt-4 text-gray-600 dark:text-gray-400">লোড হচ্ছে...</p>
+        </div>
+
+        <section id="dynamicHero" class="container mx-auto px-4 mt-5 hidden">
+            <div class="relative w-full h-[180px] md:h-[380px] rounded-2xl overflow-hidden shadow-xl bg-gray-800">
+                <div id="heroSlider" class="flex h-full w-[200%] slider-animation">
+                    <img id="heroBannerImg1" class="w-1/2 h-full object-cover" alt="hero">
+                    <img id="heroBannerImg2" class="w-1/2 h-full object-cover" alt="hero">
+                </div>
+                <div class="absolute inset-0 bg-gradient-to-r from-black/50 to-transparent flex items-center justify-start px-6 md:px-12">
+                    <button onclick="window.open('#', '_blank')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-5 rounded-full shadow-xl flex items-center gap-2 transition text-sm"><i class="fab fa-telegram"></i> Join Community</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="joinPersonSection" class="container mx-auto px-4 mt-6 hidden">
+            <div class="bg-white dark:bg-gray-800/70 rounded-2xl shadow-md p-3 border">
+                <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-wider ml-2">🌟 Active Members</h3>
+                <div class="relative overflow-hidden flex">
+                    <div id="marqueeContent" class="flex animate-marquee py-2"></div>
+                    <div id="marqueeContentClone" class="flex animate-marquee py-2" aria-hidden="true"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Match Section with Timer and Winner -->
+        <section id="dynamicMatchSection" class="container mx-auto px-4 mt-6 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-5 border relative overflow-hidden">
+                <div class="flex justify-center gap-2 mb-2">
+                    <span id="matchStatusBadge" class="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                        <i class="fas fa-circle text-red-500 text-[8px] blink-red"></i> LIVE
+                    </span>
+                </div>
+                <div class="flex justify-between items-center text-center mt-2">
+                    <div class="flex-1">
+                        <div class="w-12 h-12 mx-auto bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-2">
+                            <i class="fas fa-shield-alt text-blue-600 text-xl"></i>
+                        </div>
+                        <h4 id="team1Name" class="text-xl md:text-2xl font-black">---</h4>
+                        <p class="text-[10px] uppercase text-gray-500">Team A</p>
+                    </div>
+                    <div class="px-4">
+                        <span id="matchPoints" class="text-3xl md:text-4xl font-black bg-indigo-100 dark:bg-indigo-900/40 px-5 py-2 rounded-2xl">0-0</span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center mb-2">
+                            <i class="fas fa-futbol text-red-600 text-xl"></i>
+                        </div>
+                        <h4 id="team2Name" class="text-xl md:text-2xl font-black">---</h4>
+                        <p class="text-[10px] uppercase text-gray-500">Team B</p>
+                    </div>
+                </div>
+                <!-- Countdown Container -->
+                <div id="countdownContainer" class="mt-4 text-center hidden">
+                    <div class="bg-gray-100 dark:bg-gray-700/50 rounded-xl p-3 inline-block w-full max-w-xs mx-auto">
+                        <div class="flex items-center justify-center gap-2">
+                            <i class="fas fa-hourglass-half text-amber-500"></i>
+                            <span class="text-xs font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">MATCH STARTS IN</span>
+                        </div>
+                        <div id="countdownTimer" class="font-mono font-bold text-2xl text-amber-600 dark:text-amber-400 mt-1">00:00:00</div>
+                    </div>
+                </div>
+                <!-- Winner Overlay -->
+                <div id="winnerOverlay" class="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-700 backdrop-blur-sm hidden items-center justify-center flex-col rounded-2xl shadow-2xl z-10">
+                    <i class="fas fa-trophy text-6xl text-yellow-300 mb-3 animate-bounce"></i>
+                    <p class="text-3xl font-black text-white mb-1">🏆 WINNER 🏆</p>
+                    <p id="winnerName" class="text-2xl font-bold text-yellow-200"></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Multiplayer Lobby -->
+        <section id="multiplayerLobby" class="container mx-auto px-4 mt-6 hidden">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 border">
+                <div id="winnerBanner" class="hidden mb-3 bg-gradient-to-r from-amber-400 to-orange-500 rounded-xl p-2 text-center shadow-lg text-sm"><i class="fas fa-crown text-2xl text-white"></i> <span id="winnerTeamDisplay" class="font-black text-white text-lg ml-2"></span> <i class="fas fa-trophy"></i></div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-blue-600 text-center p-2 rounded-xl"><span id="lobbyTeam1Name" class="font-bold text-white text-xs">TEAM A</span><div class="text-3xl font-black text-white"><span id="lobbyTeam1Score">0</span></div><span class="text-white/70 text-[9px]">POINTS</span></div>
+                    <div class="bg-red-600 text-center p-2 rounded-xl"><span id="lobbyTeam2Name" class="font-bold text-white text-xs">TEAM B</span><div class="text-3xl font-black text-white"><span id="lobbyTeam2Score">0</span></div><span class="text-white/70 text-[9px]">POINTS</span></div>
+                </div>
+                <div class="text-center mb-2"><h2 class="font-black text-indigo-600 dark:text-indigo-400 text-sm">🏆 TOURNAMENT LOBBY</h2><div id="lobbyTimerContainer" class="hidden text-[10px]"><span class="text-gray-400">Countdown: </span><span id="lobbyCountdown" class="font-mono font-bold">00:00:00</span></div></div>
+                <div class="grid grid-cols-2 gap-4 relative">
+                    <div><div class="bg-blue-50 dark:bg-blue-900/30 p-1.5 rounded-lg text-center font-bold text-blue-700 text-[11px]">TEAM 1 SLOTS</div><div id="team1Slots" class="space-y-1.5 mt-2 max-h-48 overflow-y-auto"></div></div>
+                    <div><div class="bg-red-50 dark:bg-red-900/30 p-1.5 rounded-lg text-center font-bold text-red-700 text-[11px]">TEAM 2 SLOTS</div><div id="team2Slots" class="space-y-1.5 mt-2 max-h-48 overflow-y-auto"></div></div>
+                </div>
+                <div class="mt-3 text-center text-[10px]"><i id="liveStatusIcon" class="fas fa-circle text-gray-400"></i> <div id="countdownTimerBox" class="text-center mt-2">
+    <span id="countdownDisplay" class="text-3xl md:text-4xl font-mono font-black">
+        00:00:00
+    </span>
+    <div class="text-xs opacity-80">Until match start</div>
+</div></div>
+            </div>
+        </section>
+
+        <main class="container mx-auto px-4 mt-8 pb-10">
+            <div id="homepageContent">
+                <section id="heroSection" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                    <div id="mainFeature" class="lg:col-span-2 relative cursor-pointer rounded-2xl overflow-hidden shadow-2xl min-h-[280px]"></div>
+                    <div id="trendingSidebar" class="space-y-5"></div>
+                </section>
+                <div class="flex justify-between items-center border-b-2 border-red-600 pb-2 mb-6"><h2 id="sectionTitle" class="text-xl md:text-2xl font-extrabold text-red-700">📰 Latest News</h2></div>
+                <div id="newsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                <div id="loadMoreContainer" class="flex justify-center mt-10"></div>
+            </div>
+        </main>
+
+        <footer class="bg-gray-100 dark:bg-gray-900 mt-16 border-t dark:border-gray-800 transition-colors" id="mainFooter">
+            <div class="container mx-auto px-5 py-10">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-10 text-center md:text-left">
+                    <div><h1 class="text-2xl font-black text-red-600">PARANPUR-X <span class="text-gray-800 dark:text-white">GUILD</span></h1><p id="footerAbout" class="text-gray-600 dark:text-gray-400 text-sm mt-3 leading-relaxed">নির্ভীক সাংবাদিকতা</p></div>
+                    <div><h3 class="font-bold text-lg text-red-600 mb-4">Quick Links</h3><ul class="space-y-2 text-sm"><li><a href="#" onclick="filterCategory('all')" class="hover:text-red-600">Home</a></li><li><a href="#">About Us</a></li><li><a href="#">Contact</a></li><li><a href="#">Privacy</a></li></ul></div>
+                    <div><h3 class="font-bold text-lg text-red-600 mb-4">Connect</h3><p id="footerContact" class="text-gray-600 dark:text-gray-400 text-sm">contact@kazipurexpress.com</p><div id="footerSocials" class="flex justify-center md:justify-start gap-5 text-2xl mt-3"></div></div>
+                </div>
+                <hr class="my-7 border-gray-300 dark:border-gray-700">
+                <div class="flex flex-col md:flex-row justify-between text-xs text-gray-500 font-bold"><p id="footerCopyright">© 2026 PARANPUR X GUILD. All rights reserved.</p><p class="mt-2 md:mt-0"><i class="fas fa-heart text-red-500"></i> Developed by SHOPON HASAN PRIYO </p></div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Join Modal - Centered properly -->
+    <div id="joinModal" class="fixed inset-0 bg-black/60 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 w-full max-w-sm mx-auto shadow-2xl">
+            <h3 class="font-bold text-xl text-center mb-2">Join Tournament</h3>
+            <p class="text-xs text-gray-500 text-center mb-4">Enter your game name to join</p>
+            <input type="text" id="playerGameName" placeholder="Enter Game Name / UID" class="w-full border rounded-xl p-3 mb-4 dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <div class="flex gap-3">
+                <button onclick="closeJoinModal()" class="flex-1 py-2 border rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition">Cancel</button>
+                <button id="confirmJoinBtn" class="flex-1 bg-indigo-600 text-white rounded-xl py-2 font-bold hover:bg-indigo-700 transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <div id="imageModal" class="fixed inset-0 z-[3000] hidden bg-black/90 items-center justify-center" onclick="closeImageModal()"><button class="absolute top-5 right-5 text-white text-4xl">&times;</button><img id="modalImg" class="max-w-[90%] max-h-[90%] rounded-xl shadow-2xl"></div>
+
+    <script type="module">
+        import { initializeApp } from "firebase/app";
+        import { getFirestore, collection, doc, onSnapshot, query, orderBy, updateDoc, arrayUnion } from "firebase/firestore";
+        import { getAuth, onAuthStateChanged } from "firebase/auth";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOJaV7zMLhtA-_z1nkcdbtaa3w7M_0Fh4",
+            authDomain: "money-generate-dbab3.firebaseapp.com",
+            databaseURL: "https://money-generate-dbab3-default-rtdb.firebaseio.com",
+            projectId: "money-generate-dbab3",
+            storageBucket: "money-generate-dbab3.firebasestorage.app",
+            appId: "1:579756089926:web:abbe35377e3657889be047"
+        };
+        
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        let allNews = [];
+        let currentFiltered = [];
+        let displayedCount = 6;
+        let currentSelectedTeam = '';
+        let isDataLoaded = false;
+        let matchTimerInterval = null;
+        
+        function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){ if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;}); }
+        
+        window.resetToHome = () => {
+            if(document.getElementById('fullNewsView').style.display === 'block') closeFullNews();
+            filterCategory('all');
+            window.scrollTo({top:0, behavior:'smooth'});
+            if(window.location.search.includes('?id=')) history.pushState({}, '', window.location.pathname);
+        };
+        
+        function hideLoading() {
+            const loadingEl = document.getElementById('loadingIndicator');
+            if(loadingEl) {
+                loadingEl.style.opacity = '0';
+                setTimeout(() => { loadingEl.style.display = 'none'; }, 300);
+            }
+        }
+        
+        
+
+let countdownInterval = null;
+
+function updateCountdown(startISO) {
+    if (countdownInterval) clearInterval(countdownInterval);
+    
+    const target = new Date(startISO).getTime();
+    const timerElement = document.getElementById("countdownTimerBox"); // আপনার ID অনুযায়ী দিন
+    
+    if (!startISO || isNaN(target)) {
+        timerElement.innerHTML = "No timer set";
+        return;
+    }
+    
+    countdownInterval = setInterval(() => {
+        const diff = target - Date.now();
+        
+        if (diff <= 0) {
+            clearInterval(countdownInterval);
+            timerElement.innerHTML = "LIVE NOW!";
+            return;
+        }
+        
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        
+        timerElement.innerHTML = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+// আসল কাজ এখানে: ডাটাবেস চেঞ্জ হলেই এই ফাংশনটি অটো রান হবে
+onSnapshot(doc(db, "settings", "multiplayer"), (snap) => {
+    if (snap.exists()) {
+        const data = snap.data();
+        
+        // যদি ডাটাবেসে startTime থাকে, তবেই কাউন্টডাউন শুরু হবে
+        if (data.startTime) {
+            updateCountdown(data.startTime);
+        } else {
+            if (countdownInterval) clearInterval(countdownInterval);
+            document.getElementById("countdownTimerBox").innerHTML = "Waiting...";
+        }
+        
+        // স্কোর বা অন্যান্য ডাটাও এখানে আপডেট করতে পারেন
+        // document.getElementById("score1").innerText = data.point1 || 0;
+    }
+});
+        
+        // Match Timer Function - FIXED
+        function startMatchTimer(startTimeStr) {
+            if(matchTimerInterval) clearInterval(matchTimerInterval);
+            
+            const countdownContainer = document.getElementById('countdownContainer');
+            const timerDisplay = document.getElementById('countdownTimer');
+            const statusBadge = document.getElementById('matchStatusBadge');
+            
+            const startTime = new Date(startTimeStr);
+            const now = new Date();
+            
+            if(startTime > now) {
+                // Upcoming match - show countdown
+                countdownContainer.classList.remove('hidden');
+                statusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i> UPCOMING';
+                statusBadge.className = "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1";
+                
+                matchTimerInterval = setInterval(() => {
+                    const current = new Date();
+                    const diff = startTime - current;
+                    
+                    if(diff <= 0) {
+                        clearInterval(matchTimerInterval);
+                        countdownContainer.classList.add('hidden');
+                        statusBadge.innerHTML = '<i class="fas fa-circle blink-red mr-1"></i> LIVE NOW';
+                        statusBadge.className = "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1";
+                    } else {
+                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                        const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                        
+                        if(days > 0) {
+                            timerDisplay.innerText = `${days}d ${hours}h ${minutes}m`;
+                        } else if(hours > 0) {
+                            timerDisplay.innerText = `${hours}h ${minutes}m ${seconds}s`;
+                        } else {
+                            timerDisplay.innerText = `${minutes}m ${seconds}s`;
+                        }
+                    }
+                }, 1000);
+            } else {
+                // Match already started or live
+                countdownContainer.classList.add('hidden');
+                statusBadge.innerHTML = '<i class="fas fa-circle blink-red mr-1"></i> LIVE NOW';
+                statusBadge.className = "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1";
+            }
+        }
+        
+        // Firestore listeners
+        onSnapshot(doc(db, "settings", "ticker"), (docSnap) => { 
+            if(docSnap.exists()) document.getElementById('tickerText').innerText = docSnap.data().text || "🔴 সর্বশেষ সংবাদ ২৪/৭"; 
+        });
+        
+        onSnapshot(doc(db, "settings", "hero"), (snap) => {
+            if(snap.exists() && snap.data().show === true && snap.data().image){
+                const heroDiv = document.getElementById('dynamicHero');
+                heroDiv.classList.remove('hidden'); heroDiv.classList.add('block');
+                document.getElementById('heroBannerImg1').src = snap.data().image;
+                document.getElementById('heroBannerImg2').src = snap.data().image;
+            }
+        });
+        
+        onSnapshot(collection(db, "join-person"), (snap) => {
+            const joinSettingSnap = doc(db, "settings", "hero");
+            onSnapshot(joinSettingSnap, (settingDoc) => {
+                if(settingDoc.exists() && settingDoc.data().swipt === true && !snap.empty){
+                    let html = '';
+                    snap.forEach(d=>{ const data=d.data(); html+=`<div class="profile-card"><img src="${data.image||'https://randomuser.me/api/portraits/lego/1.jpg'}" class="profile-img"><span class="text-[9px] font-semibold mt-1">${escapeHtml(data.name||'Member')}</span></div>`;});
+                    document.getElementById('marqueeContent').innerHTML = html;
+                    document.getElementById('marqueeContentClone').innerHTML = html;
+                    document.getElementById('joinPersonSection').classList.remove('hidden');
+                }
+            });
+        });
+        
+        // Match Section with Timer and Winner - FIXED
+        onSnapshot(doc(db, "settings", "match"), (snap) => {
+            const matchDiv = document.getElementById('dynamicMatchSection');
+            
+            if(!snap.exists() || !snap.data().show) {
+                matchDiv.classList.add('hidden');
+                if(matchTimerInterval) clearInterval(matchTimerInterval);
+                return;
+            }
+            
+            matchDiv.classList.remove('hidden');
+            const data = snap.data();
+            
+            document.getElementById('team1Name').innerText = data.team1 || 'Team A';
+            document.getElementById('team2Name').innerText = data.team2 || 'Team B';
+            document.getElementById('matchPoints').innerText = `${data.point1 || 0} - ${data.point2 || 0}`;
+            
+            // Handle timer if startTime exists
+            if(data.startTime) {
+                startMatchTimer(data.startTime);
+            } else {
+                document.getElementById('countdownContainer').classList.add('hidden');
+                const statusBadge = document.getElementById('matchStatusBadge');
+                if(data.active === true) {
+                    statusBadge.innerHTML = '<i class="fas fa-circle blink-red mr-1"></i> LIVE NOW';
+                    statusBadge.className = "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1";
+                } else {
+                    statusBadge.innerHTML = '<i class="fas fa-hourglass-half mr-1"></i> NOT STARTED';
+                    statusBadge.className = "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1";
+                }
+            }
+            
+            // Winner overlay - FIXED
+            const winnerOverlay = document.getElementById('winnerOverlay');
+            if(data.winner && data.winner !== ""){ 
+                winnerOverlay.classList.remove('hidden'); 
+                document.getElementById('winnerName').innerText = data.winner;
+                // Auto hide after 5 seconds? No, keep showing until reset
+            } else {
+                winnerOverlay.classList.add('hidden');
+            }
+        });
+        
+        let currentUser = null;
+        onAuthStateChanged(auth, (user)=>{ currentUser = user; });
+        
+        function renderLobbySlots(containerId, size, playersArr, teamKey, hasJoinedFlag){
+            const container = document.getElementById(containerId);
+            if(!container) return;
+            container.innerHTML = '';
+            for(let i=0; i<size; i++){
+                const player = playersArr[i];
+                if(player){
+                    const div = document.createElement('div');
+                    div.className = "bg-gray-100 dark:bg-gray-700 p-1.5 rounded-xl text-[11px] font-medium flex items-center gap-2";
+                    div.innerHTML = `<i class="fas fa-user-circle text-indigo-500 text-xs"></i> ${escapeHtml(player.gameName)}`;
+                    container.appendChild(div);
+                } else {
+                    const emptyDiv = document.createElement('div');
+                    emptyDiv.className = "border-2 border-dashed border-gray-300 dark:border-gray-600 p-1.5 rounded-xl text-center text-[10px] font-bold uppercase tracking-wider cursor-pointer hover:border-indigo-500 transition";
+                    emptyDiv.innerText = "➕ Join Slot";
+                    if(!hasJoinedFlag) emptyDiv.onclick = () => openJoinModal(teamKey);
+                    else emptyDiv.style.opacity = "0.5";
+                    container.appendChild(emptyDiv);
+                }
+            }
+        }
+        
+        function updateLobbyUI(data){
+            if(!data) return;
+            document.getElementById('lobbyTeam1Name').innerText = data.team1Name || 'TEAM A';
+            document.getElementById('lobbyTeam2Name').innerText = data.team2Name || 'TEAM B';
+            document.getElementById('lobbyTeam1Score').innerText = data.point1 || 0;
+            document.getElementById('lobbyTeam2Score').innerText = data.point2 || 0;
+            const hasJoined = currentUser ? [...(data.team1Players||[]),...(data.team2Players||[])].some(p=>p.uid===currentUser.uid) : false;
+            renderLobbySlots('team1Slots', data.team1Size||4, data.team1Players||[], 'team1Players', hasJoined);
+            renderLobbySlots('team2Slots', data.team2Size||4, data.team2Players||[], 'team2Players', hasJoined);
+            
+            const winnerBanner = document.getElementById('winnerBanner');
+            if(data.winnerTeam === 'team1'){
+                winnerBanner.classList.remove('hidden');
+                document.getElementById('winnerTeamDisplay').innerText = data.team1Name + ' 🏆';
+            } else if(data.winnerTeam === 'team2'){
+                winnerBanner.classList.remove('hidden');
+                document.getElementById('winnerTeamDisplay').innerText = data.team2Name + ' 🏆';
+            } else {
+                winnerBanner.classList.add('hidden');
+            }
+        }
+        
+        onSnapshot(doc(db, "settings", "multiplayer"), (snap) => {
+            if(snap.exists() && snap.data().active === true) {
+                document.getElementById('multiplayerLobby').classList.remove('hidden');
+                updateLobbyUI(snap.data());
+            } else {
+                document.getElementById('multiplayerLobby').classList.add('hidden');
+            }
+        });
+        
+        function updateFooterUI(data){
+            if(!data) return;
+            const aboutEl = document.getElementById('footerAbout'); if(aboutEl) aboutEl.innerText = data.about || "নির্ভীক সংবাদ, সবার আগে";
+            const contactEl = document.getElementById('footerContact'); if(contactEl) contactEl.innerHTML = `<i class="fas fa-envelope mr-2"></i> ${data.contact || "info@kazipurexpress.com"}`;
+            const copyEl = document.getElementById('footerCopyright'); if(copyEl) copyEl.innerText = `© ${new Date().getFullYear()} ${data.copyright || "PARANPUR X GUILD"}`;
+            const socialDiv = document.getElementById('footerSocials');
+            if(socialDiv){
+                socialDiv.innerHTML = '';
+                if(data.facebook) socialDiv.innerHTML += `<a href="${data.facebook}" target="_blank" class="hover:scale-110 transition text-blue-600"><i class="fab fa-facebook-f text-xl"></i></a>`;
+                if(data.youtube) socialDiv.innerHTML += `<a href="${data.youtube}" target="_blank" class="hover:scale-110 transition text-red-600"><i class="fab fa-youtube text-xl"></i></a>`;
+                if(data.telegram) socialDiv.innerHTML += `<a href="${data.telegram}" target="_blank" class="hover:scale-110 transition text-sky-500"><i class="fab fa-telegram text-xl"></i></a>`;
+            }
+        }
+        onSnapshot(doc(db, "settings", "footer"), (snap) => { if(snap.exists()) updateFooterUI(snap.data()); });
+        
+        // NEWS - Main data load
+        const newsQuery = query(collection(db, "news"), orderBy("timestamp", "desc"));
+        onSnapshot(newsQuery, (snapshot) => {
+            allNews = snapshot.docs.map(d=> ({ id: d.id, ...d.data() }));
+            currentFiltered = [...allNews];
+            renderHeroSection(allNews);
+            renderNewsGrid(currentFiltered);
+            
+            if(!isDataLoaded) {
+                isDataLoaded = true;
+                hideLoading();
+            }
+            
+            const params = new URLSearchParams(window.location.search);
+            const hasId = params.has('id');
+            const popupOpen = document.getElementById('fullNewsView').style.display === 'block';
+            if(hasId && !popupOpen && isDataLoaded) {
+                const newsItem = allNews.find(n => n.id === params.get('id'));
+                if(newsItem) openFullNews(params.get('id'), false);
+            }
+        });
+        
+        function renderHeroSection(newsArr){
+            if(!newsArr.length) return;
+            const mainNews = newsArr[0];
+            document.getElementById('mainFeature').innerHTML = `<div onclick="openFullNews('${mainNews.id}')"><img src="${mainNews.img}" class="w-full h-[260px] md:h-[420px] object-cover"><div class="absolute bottom-0 left-0 p-5 bg-gradient-to-t from-black via-black/60 to-transparent w-full"><h2 class="text-xl md:text-3xl font-bold text-white">${escapeHtml(mainNews.title)}</h2></div></div>`;
+            const trending = newsArr.slice(1,4);
+            const sidebarDiv = document.getElementById('trendingSidebar');
+            sidebarDiv.innerHTML = `<h3 class="text-xl font-bold border-l-4 border-red-600 pl-3">🔥 Trending</h3>`;
+            trending.forEach(item=>{ sidebarDiv.innerHTML += `<div onclick="openFullNews('${item.id}')" class="flex gap-3 items-center border-b pb-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded"><img src="${item.img}" class="w-16 h-16 object-cover rounded-lg"><div><p class="font-bold text-sm line-clamp-2">${escapeHtml(item.title)}</p><span class="text-[10px] text-red-500">${item.category}</span></div></div>`;});
+        }
+        
+        function renderNewsGrid(data){
+            const grid = document.getElementById('newsGrid');
+            grid.innerHTML = '';
+            const toShow = data.slice(0, displayedCount);
+            toShow.forEach(news=>{
+                grid.innerHTML += `<div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition cursor-pointer" onclick="openFullNews('${news.id}')"><img src="${news.img}" class="h-48 w-full object-cover"><div class="p-4"><span class="text-red-600 text-xs font-bold uppercase">${news.category}</span><h3 class="font-extrabold mt-2 text-lg">${escapeHtml(news.title)}</h3><p class="text-gray-500 text-sm line-clamp-3 mt-2">${escapeHtml(news.desc)}</p></div></div>`;
+            });
+            const loadMoreDiv = document.getElementById('loadMoreContainer');
+            if(data.length > displayedCount){
+                loadMoreDiv.innerHTML = `<button onclick="loadMoreNews()" class="bg-red-600 text-white px-7 py-2 rounded-full font-bold shadow-md hover:bg-red-700 transition text-sm"><i class="fas fa-plus-circle mr-1"></i> আরও পড়ুন (${data.length - displayedCount} remaining)</button>`;
+            } else if(data.length > 0 && displayedCount >= data.length) {
+                loadMoreDiv.innerHTML = `<p class="text-gray-400 text-sm">✨ আর কোন খবর নেই</p>`;
+            } else {
+                loadMoreDiv.innerHTML = '';
+            }
+        }
+        
+        window.loadMoreNews = () => { 
+            displayedCount += 6; 
+            renderNewsGrid(currentFiltered); 
+        };
+        
+        window.filterCategory = (cat) => {
+            document.getElementById('mobileMenu')?.classList.remove('active');
+            if(cat === 'all') { 
+                currentFiltered = [...allNews]; 
+                document.getElementById('heroSection').style.display = 'grid'; 
+                document.getElementById('sectionTitle').innerHTML = "📰 Latest News"; 
+            } else { 
+                currentFiltered = allNews.filter(n=> n.category === cat); 
+                document.getElementById('heroSection').style.display = 'none'; 
+                document.getElementById('sectionTitle').innerHTML = `${cat} News`; 
+            }
+            displayedCount = 6;
+            renderNewsGrid(currentFiltered);
+            window.scrollTo({top:0, behavior:'smooth'});
+        };
+        
+        window.handleSearch = (isMobile) => {
+            const term = document.getElementById(isMobile ? 'mobileSearch' : 'searchInput').value.toLowerCase();
+            currentFiltered = allNews.filter(n=> n.title.toLowerCase().includes(term) || (n.desc && n.desc.toLowerCase().includes(term)));
+            document.getElementById('heroSection').style.display = term ? 'none' : 'grid';
+            document.getElementById('sectionTitle').innerHTML = term ? `🔍 Search: "${term}"` : "📰 Latest News";
+            displayedCount = 6;
+            renderNewsGrid(currentFiltered);
+        };
+        
+        window.openFullNews = (id, pushState=true) => {
+            const news = allNews.find(n=> n.id===id);
+            if(!news) return;
+            if(pushState) history.pushState({}, '', `?id=${id}`);
+            const contentDiv = document.getElementById('newsContentWrap');
+            contentDiv.innerHTML = `<img src="${news.img}" onclick="openImageModal('${news.img}')" class="w-full h-64 md:h-[450px] object-cover rounded-2xl mb-5 cursor-zoom-in shadow-lg"><span class="bg-red-600 px-3 py-1 text-white text-xs rounded-full">${news.category}</span><h1 class="text-2xl md:text-4xl font-black mt-3">${escapeHtml(news.title)}</h1><p class="text-gray-400 text-sm mt-1"><i class="far fa-calendar"></i> ${news.date||'তাজা সংবাদ'}</p><div class="mt-6 text-gray-700 dark:text-gray-300 leading-relaxed text-base md:text-lg">${(news.desc||'').replace(/\n/g,'<br>')}</div>`;
+            const randomSuggest = allNews.filter(n=> n.id !== id).sort(()=>0.5-Math.random()).slice(0,4);
+            const suggestHtml = `<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8"><h3 class="col-span-full font-bold text-xl">আরও খবর</h3>${randomSuggest.map(n=> `<div onclick="openFullNews('${n.id}')" class="flex gap-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 p-2 rounded"><img src="${n.img}" class="w-16 h-16 object-cover rounded-lg"><div><p class="font-bold text-sm">${escapeHtml(n.title)}</p><span class="text-xs text-red-500">${n.category}</span></div></div>`).join('')}</div>`;
+            contentDiv.insertAdjacentHTML('beforeend', suggestHtml);
+            const mainFooterClone = document.getElementById('mainFooter').cloneNode(true);
+            const popupFooterContainer = document.getElementById('popupFooter');
+            popupFooterContainer.innerHTML = '';
+            popupFooterContainer.appendChild(mainFooterClone);
+            document.getElementById('fullNewsView').style.display = 'block';
+            document.body.style.overflow = 'hidden';
+        };
+        
+        window.closeFullNews = () => {
+            document.getElementById('fullNewsView').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            if(window.location.search.includes('?id=')) history.pushState({}, '', window.location.pathname);
+        };
+        
+        window.copyArticleLink = () => { 
+            navigator.clipboard.writeText(window.location.href); 
+            alert("লিংক কপি হয়েছে!"); 
+        };
+        
+        window.openJoinModal = (teamKey) => { 
+            if(!currentUser) { alert("Please Login First"); return; } 
+            currentSelectedTeam = teamKey; 
+            const modal = document.getElementById('joinModal');
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+        };
+        
+        window.closeJoinModal = () => { 
+            const modal = document.getElementById('joinModal');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.getElementById('playerGameName').value = ''; 
+        };
+        
+        document.getElementById('confirmJoinBtn').onclick = async () => {
+            const gameName = document.getElementById('playerGameName').value.trim();
+            if(!gameName) return alert("Enter a valid Game Name");
+            if(!currentUser) return alert("Login needed");
+            const btn = document.getElementById('confirmJoinBtn');
+            btn.disabled = true;
+            btn.innerText = "Joining...";
+            try {
+                await updateDoc(doc(db, "settings", "multiplayer"), { [currentSelectedTeam]: arrayUnion({ uid: currentUser.uid, gameName: gameName, time: new Date().toISOString() }) });
+                closeJoinModal(); alert("Joined successfully!");
+            } catch(e){ alert("Error joining: " + e.message); }
+            btn.disabled = false;
+            btn.innerText = "Confirm";
+        };
+        
+        window.openImageModal = (src) => { 
+            const modal = document.getElementById('imageModal'); 
+            document.getElementById('modalImg').src = src; 
+            modal.classList.remove('hidden'); 
+            document.body.style.overflow = 'hidden'; 
+        };
+        
+        window.closeImageModal = () => { 
+            document.getElementById('imageModal').classList.add('hidden'); 
+            document.body.style.overflow = 'auto'; 
+        };
+        
+        const themeBtn = document.getElementById('themeToggle');
+        themeBtn?.addEventListener('click',()=>{ 
+            document.body.classList.toggle('dark-mode'); 
+            const icon=themeBtn.querySelector('i'); 
+            if(document.body.classList.contains('dark-mode')) icon.classList.replace('fa-moon','fa-sun'); 
+            else icon.classList.replace('fa-sun','fa-moon'); 
+        });
+        
+        document.getElementById('menuBtn')?.addEventListener('click',()=>{ 
+            document.getElementById('mobileMenu')?.classList.toggle('active'); 
+        });
+        
+        window.handleLoginRedirect = () => { 
+            window.location.href="login.html"; 
+        };
+        
+        window.addEventListener('popstate', ()=>{
+            if(document.getElementById('fullNewsView').style.display === 'block') closeFullNews();
+            else if(window.location.search.includes('?id=')) { 
+                const params = new URLSearchParams(window.location.search);
+                if(params.has('id')) openFullNews(params.get('id'), false);
+            }
+        });
+        
+        displayedCount = 6;
+    </script>
+</body>
+</html>
