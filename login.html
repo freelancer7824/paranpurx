@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | PARANPUR X: Headshot Only Zone</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+        
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        .login-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            transition: all 0.3s ease;
+        }
+        
+        .dark-mode .login-card {
+            background: rgba(31, 41, 55, 0.95);
+        }
+        
+        .input-field {
+            transition: all 0.3s ease;
+        }
+        
+        .input-field:focus {
+            transform: translateX(5px);
+        }
+        
+        .social-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .social-btn:hover {
+            transform: translateY(-3px);
+        }
+        
+        .error-shake {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        
+        .success-check {
+            animation: checkmark 0.5s ease-in-out;
+        }
+        
+        @keyframes checkmark {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-red-600 via-red-500 to-orange-500 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen">
+
+    <!-- Background Pattern -->
+    <div class="fixed inset-0 opacity-10 pointer-events-none">
+        <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.4"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E'); background-repeat: repeat;"></div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="relative min-h-screen flex items-center justify-center p-4">
+        
+        <!-- Back to Home Button -->
+        <a href="index.html" class="absolute top-6 left-6 text-white hover:text-gray-200 transition-all duration-300 flex items-center gap-2 bg-black/20 backdrop-blur-sm px-4 py-2 rounded-full hover:bg-black/30">
+            <i class="fas fa-arrow-left"></i>
+            <span class="hidden sm:inline">Back to Home</span>
+        </a>
+
+        <!-- Theme Toggle -->
+        <button id="themeToggle" class="absolute top-6 right-6 text-white hover:text-gray-200 transition-all duration-300 bg-black/20 backdrop-blur-sm w-10 h-10 rounded-full flex items-center justify-center hover:bg-black/30">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        <!-- Login Card -->
+        <div class="login-card rounded-2xl shadow-2xl max-w-md w-full p-8 animate-fade-in border border-white/20">
+            
+            <!-- Logo & Title -->
+            <div class="text-center mb-8">
+                <div class="inline-block bg-red-600 text-white w-20 h-20 rounded-2xl flex items-center justify-center mb-4 shadow-lg animate-pulse-slow">
+                    <i class="fas fa-newspaper text-4xl"></i>
+                </div>
+                <h1 class="text-3xl font-black text-gray-800 dark:text-white">PARANPUR X | GUILD</h1>
+                <p class="text-gray-500 dark:text-gray-400 mt-2">Welcome Back! 👋</p>
+            </div>
+
+            <!-- Toggle between Login & Signup -->
+            <div class="flex gap-2 bg-gray-100 dark:bg-gray-700 rounded-xl p-1 mb-6">
+                <button id="loginTab" class="flex-1 py-2 rounded-lg font-semibold transition-all duration-300 bg-red-600 text-white shadow-md">
+                    <i class="fas fa-sign-in-alt mr-2"></i>Login
+                </button>
+                <button id="signupTab" class="flex-1 py-2 rounded-lg font-semibold transition-all duration-300 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600">
+                    <i class="fas fa-user-plus mr-2"></i>Sign Up
+                </button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="loginForm" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-envelope mr-2 text-red-600"></i>Email Address
+                    </label>
+                    <input type="email" id="loginEmail" required class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all" placeholder="Enter your email">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-lock mr-2 text-red-600"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="loginPassword" required class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all" placeholder="Enter your password">
+                        <button type="button" onclick="togglePassword('loginPassword')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="rememberMe" class="w-4 h-4 text-red-600 rounded focus:ring-red-600">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Remember me</span>
+                    </label>
+                    <a href="#" onclick="showForgotPassword()" class="text-sm text-red-600 hover:text-red-700 font-semibold">Forgot Password?</a>
+                </div>
+
+                <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-arrow-right-to-bracket"></i>
+                    Login to Account
+                </button>
+            </form>
+
+            <!-- Signup Form -->
+            <form id="signupForm" class="space-y-5 hidden">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-user mr-2 text-red-600"></i>Full Name
+                    </label>
+                    <input type="text" id="signupName" required class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all" placeholder="Enter your full name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-envelope mr-2 text-red-600"></i>Email Address
+                    </label>
+                    <input type="email" id="signupEmail" required class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all" placeholder="Enter your email">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-lock mr-2 text-red-600"></i>Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="signupPassword" required class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all" placeholder="Create a password (min 6 characters)">
+                        <button type="button" onclick="togglePassword('signupPassword')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-lock mr-2 text-red-600"></i>Confirm Password
+                    </label>
+                    <div class="relative">
+                        <input type="password" id="confirmPassword" required class="input-field w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-600 transition-all" placeholder="Confirm your password">
+                        <button type="button" onclick="togglePassword('confirmPassword')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-600">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="termsCheckbox" class="w-4 h-4 text-red-600 rounded focus:ring-red-600">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">I agree to the <a href="#" class="text-red-600 hover:underline">Terms & Conditions</a></span>
+                </label>
+
+                <button type="submit" id="signupBtn" class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-bold py-3 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-user-plus"></i>
+                    Create Account
+                </button>
+            </form>
+
+            <!-- Divider -->
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-4 bg-transparent text-gray-500 dark:text-gray-400">Or continue with</span>
+                </div>
+            </div>
+
+            <!-- Social Login -->
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="socialLogin('google')" class="social-btn flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                    <i class="fab fa-google text-red-600 text-lg"></i>
+                    <span class="text-sm hidden sm:inline">Google</span>
+                </button>
+                <button onclick="socialLogin('facebook')" class="social-btn flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                    <i class="fab fa-facebook text-blue-600 text-lg"></i>
+                    <span class="text-sm hidden sm:inline">Facebook</span>
+                </button>
+                <button onclick="socialLogin('github')" class="social-btn flex items-center justify-center gap-2 py-2 rounded-xl border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all">
+                    <i class="fab fa-github text-gray-800 dark:text-white text-lg"></i>
+                    <span class="text-sm hidden sm:inline">GitHub</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-y-20 opacity-0 z-50">
+        <i id="toastIcon" class="fas fa-check-circle text-green-400"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, GithubAuthProvider, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDOJaV7zMLhtA-_z1nkcdbtaa3w7M_0Fh4",
+            authDomain: "money-generate-dbab3.firebaseapp.com",
+            databaseURL: "https://money-generate-dbab3-default-rtdb.firebaseio.com",
+            projectId: "money-generate-dbab3",
+            storageBucket: "money-generate-dbab3.firebasestorage.app",
+            messagingSenderId: "579756089926",
+            appId: "1:579756089926:web:abbe35377e3657889be047",
+            measurementId: "G-PQW2KF642W"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // DOM Elements
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+
+        // Toggle between Login and Signup
+        loginTab.addEventListener('click', () => {
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+            loginTab.classList.add('bg-red-600', 'text-white', 'shadow-md');
+            loginTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200');
+            signupTab.classList.remove('bg-red-600', 'text-white', 'shadow-md');
+            signupTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200');
+        });
+
+        signupTab.addEventListener('click', () => {
+            signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+            signupTab.classList.add('bg-red-600', 'text-white', 'shadow-md');
+            signupTab.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200');
+            loginTab.classList.remove('bg-red-600', 'text-white', 'shadow-md');
+            loginTab.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-200');
+        });
+
+        // Show Toast Notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastIcon.className = type === 'success' ? 'fas fa-check-circle text-green-400' : 'fas fa-exclamation-circle text-red-400';
+            toastMessage.textContent = message;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }, 3000);
+        }
+
+        // Show Error with Shake Animation
+        function showError(element, message) {
+            const input = document.getElementById(element);
+            input.classList.add('error-shake', 'border-red-500');
+            showToast(message, 'error');
+            setTimeout(() => {
+                input.classList.remove('error-shake', 'border-red-500');
+            }, 500);
+        }
+
+        // Login Function
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const rememberMe = document.getElementById('rememberMe').checked;
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                
+                if (rememberMe) {
+                    localStorage.setItem('rememberedUser', email);
+                } else {
+                    localStorage.removeItem('rememberedUser');
+                }
+                
+                showToast('Login successful! Redirecting...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+                
+            } catch (error) {
+                let errorMessage = '';
+                switch (error.code) {
+                    case 'auth/user-not-found':
+                        errorMessage = 'No account found with this email';
+                        showError('loginEmail', errorMessage);
+                        break;
+                    case 'auth/wrong-password':
+                        errorMessage = 'Incorrect password';
+                        showError('loginPassword', errorMessage);
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email format';
+                        showError('loginEmail', errorMessage);
+                        break;
+                    case 'auth/user-disabled':
+                        errorMessage = 'This account has been disabled';
+                        break;
+                    default:
+                        errorMessage = 'Login failed. Please try again';
+                        showToast(errorMessage, 'error');
+                }
+                showToast(errorMessage, 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-arrow-right-to-bracket"></i> Login to Account';
+            }
+        });
+
+        // Signup Function
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const termsChecked = document.getElementById('termsCheckbox').checked;
+            
+            if (password !== confirmPassword) {
+                showError('confirmPassword', 'Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showError('signupPassword', 'Password must be at least 6 characters');
+                return;
+            }
+            
+            if (!termsChecked) {
+                showToast('Please accept the Terms & Conditions', 'error');
+                return;
+            }
+            
+            signupBtn.disabled = true;
+            signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+            
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                await setDoc(doc(db, "users", user.uid), {
+                    name: name,
+                    email: email,
+                    createdAt: new Date().toISOString(),
+                    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=dc2626&color=fff`
+                });
+                
+                showToast('Account created successfully! Redirecting...', 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+                
+            } catch (error) {
+                let errorMessage = '';
+                switch (error.code) {
+                    case 'auth/email-already-in-use':
+                        errorMessage = 'Email already registered';
+                        showError('signupEmail', errorMessage);
+                        break;
+                    case 'auth/invalid-email':
+                        errorMessage = 'Invalid email format';
+                        showError('signupEmail', errorMessage);
+                        break;
+                    case 'auth/weak-password':
+                        errorMessage = 'Password is too weak';
+                        showError('signupPassword', errorMessage);
+                        break;
+                    default:
+                        errorMessage = 'Signup failed. Please try again';
+                }
+                showToast(errorMessage, 'error');
+            } finally {
+                signupBtn.disabled = false;
+                signupBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+            }
+        });
+
+        // Social Login Functions
+        window.socialLogin = async (provider) => {
+            let authProvider;
+            
+            switch(provider) {
+                case 'google':
+                    authProvider = new GoogleAuthProvider();
+                    break;
+                case 'facebook':
+                    authProvider = new FacebookAuthProvider();
+                    break;
+                case 'github':
+                    authProvider = new GithubAuthProvider();
+                    break;
+                default:
+                    return;
+            }
+            
+            showToast(`Connecting with ${provider}...`, 'success');
+            
+            try {
+                const result = await signInWithPopup(auth, authProvider);
+                const user = result.user;
+                
+                await setDoc(doc(db, "users", user.uid), {
+                    name: user.displayName || `${provider} User`,
+                    email: user.email,
+                    avatar: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || provider}&background=dc2626&color=fff`,
+                    createdAt: new Date().toISOString(),
+                    provider: provider
+                }, { merge: true });
+                
+                showToast(`Signed in with ${provider}! Redirecting...`, 'success');
+                
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error(error);
+                showToast(`Failed to sign in with ${provider}`, 'error');
+            }
+        };
+
+        // Forgot Password
+        window.showForgotPassword = async () => {
+            const email = prompt('Enter your email address to reset password:');
+            if (email) {
+                try {
+                    await sendPasswordResetEmail(auth, email);
+                    showToast('Password reset email sent! Check your inbox.', 'success');
+                } catch (error) {
+                    showToast('Failed to send reset email. Please try again.', 'error');
+                }
+            }
+        };
+
+        // Load remembered user
+        const rememberedUser = localStorage.getItem('rememberedUser');
+        if (rememberedUser) {
+            document.getElementById('loginEmail').value = rememberedUser;
+            document.getElementById('rememberMe').checked = true;
+        }
+
+        // Check if user is already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user && window.location.pathname.includes('login.html')) {
+                // User is logged in, redirect to home
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        }
+        
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            themeToggle.innerHTML = isDark ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+        });
+        
+        // Toggle Password Visibility
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const icon = field.nextElementSibling.querySelector('i');
+            if (field.type === 'password') {
+                field.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+        window.togglePassword = togglePassword;
+    </script>
+</body>
+</html>
